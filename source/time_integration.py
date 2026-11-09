@@ -10,12 +10,18 @@ class VelocityVerlet:
 
     # initial draft of our time-stepper. The acceleration part
     # needs to be reworked later when we have it in place
-    # we should definitely pass a function instead
-    def advance_time_step(self, particle, acceleration, acceleration_next):
-        # kick
+    # we should definitely pass a function instead.
+
+    # we split them into three steps because we need to transfer particles
+    # between cells after the second step
+
+    # kick
+    def first_kick(self, particle, acceleration):
         particle.velocity = particle.velocity + (self.dt/2)*acceleration;
-        # drift
+    # drift
+    def drift(self, particle):
         particle.position = particle.position + (self.dt)*particle.velocity;
-        #kick
+    #kick
+    def second_kick(self, particle, acceleration_next):
         particle.velocity = particle.velocity + (self.dt/2)*acceleration_next;
         
