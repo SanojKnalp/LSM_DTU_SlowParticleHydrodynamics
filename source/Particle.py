@@ -16,4 +16,8 @@ class Particle:
         self.mass = self.buffer[4];
         self.density = self.buffer[5];
         self.pressure = self.buffer[6];
-        self.viscosity = self.buffer[7];
+        self.viscosity = self.buffer[7]; # the viscosity is constant for 
+
+    def reset_dynamic_values(self):
+        self.density = 0;
+        self.pressure = 0;
