@@ -14,5 +14,5 @@ class EoS:
     # density value if we decide to store the pressure as a value of the
     # particle
     def evaluate_pressure(self,particle):
-        particle.pressure =  (self.speed_of_sound**2)*(particle.density - self.reference_density);
+        particle.pressure +=  (self.speed_of_sound**2)*(particle.density - self.reference_density);
 
