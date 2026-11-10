@@ -8,11 +8,12 @@ import numpy as np
 # maybe also the particle id or something?
 class Particle:
     def __init__(self, pos, vel):
-        self.buffer = np.empty(6, dtype=np.float64);
-        self.velocity = self.buffer[:3];
+        self.buffer = np.zeros(8, dtype=np.float64);
+        self.velocity = self.buffer[0:1];
         self.velocity = vel;
-        self.position = self.buffer[3:];
+        self.position = self.buffer[2:3];
         self.position = pos;
-
-    
-
+        self.mass = self.buffer[4];
+        self.density = self.buffer[5];
+        self.pressure = self.buffer[6];
+        self.viscosity = self.buffer[7];

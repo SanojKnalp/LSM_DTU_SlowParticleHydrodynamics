@@ -1,10 +1,11 @@
-
+import numpy as np
 # cell class we will use to store our particles
 # we need to know if it is a boundary cell or not
 # to potentially resolve collisions as this is the cell's task
 # Also WIP
 class Cell:
     def __init__(self, lower_left, length):
+        self.buffer = np.empty(3 +2 + );
         self.lower_left = lower_left; # we have cubed cells, so we will use the lower point and we have completely defined the cell
         self.length     = length;
         self.is_at_boundary = 0;

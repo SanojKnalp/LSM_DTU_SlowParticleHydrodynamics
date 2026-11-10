@@ -1,4 +1,4 @@
-
+import Particle
 # the equation of state used here
 # We will be simulating water, so a reference density is set
 # the density is the density of the respective particle
@@ -13,6 +13,6 @@ class EoS:
     # we should maybe pass the particle instead of the 
     # density value if we decide to store the pressure as a value of the
     # particle
-    def evaluate_pressure(self,density):
-        return (self.speed_of_sound**2)*(density - self.reference_density);
+    def evaluate_pressure(self,particle):
+        particle.pressure =  (self.speed_of_sound**2)*(particle.density - self.reference_density);
 
