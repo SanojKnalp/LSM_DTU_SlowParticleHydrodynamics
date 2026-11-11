@@ -5,8 +5,10 @@ import Particle
 # the reason why it is a class and not a standalone function
 # is because we only need to pass the time step-size once 
 class VelocityVerlet:
-    def __init__(self, dt):
+    def __init__(self, dt, simulation_time):
         self.dt = dt;
+        self.T = simulation_time;
+        self.current_time = 0;
 
     # initial draft of our time-stepper. The acceleration part
     # needs to be reworked later when we have it in place
@@ -24,4 +26,10 @@ class VelocityVerlet:
     #kick
     def second_kick(self, particle, acceleration_next):
         particle.velocity = particle.velocity + (self.dt/2)*acceleration_next;
+        self.current_time += self.dt;
+
+    def reached_final_time(self):
+        if (self.current_time < self.T):
+            return False;
+        return True;
         
