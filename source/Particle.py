@@ -7,8 +7,8 @@ import numpy as np
 # We should consider also storing the density, viscosity and pressure (if it makes sense)
 # maybe also the particle id or something?
 class Particle:
-    def __init__(self, pos, vel):
-        self.buffer = np.zeros(10, dtype=np.float64);
+    def __init__(self, pos, vel, radius):
+        self.buffer = np.zeros(11, dtype=np.float64);
         self.position = self.buffer[0:1];
         self.position = pos;
         self.velocity = self.buffer[2:3];
@@ -18,6 +18,8 @@ class Particle:
         self.density = self.buffer[7];
         self.pressure = self.buffer[8];
         self.viscosity = self.buffer[9]; # the viscosity is constant for 
+        self.radius = self.buffer[10];
+        self.radius = radius;
 
     def reset_dynamic_values(self):
         self.density = 0;

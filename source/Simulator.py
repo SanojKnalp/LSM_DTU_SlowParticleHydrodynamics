@@ -10,7 +10,7 @@ class Simulator:
 
     # we need separate loops as we need to precompute the densities, because we need them a lot
     def cell_loop_density_and_pressure(self):
-            for cell in self.grid.list_of_owned_cells:
+            for cell in self.grid.matrix_of_cells:
                 cell_and_neighbours = self.grid.get_neighbouring_cells(cell);
                 for particle in cell: # this needs to be adjusted as soon as I have the cell class
                     for local_cell in cell_and_neighbours:
@@ -20,21 +20,22 @@ class Simulator:
     # the next is to evaluate the acceleration
     def cell_loop_acceleration(self):
         # we loop over all the cells we own
-        for cell in self.grid.list_of_owned_cells:
-            # we extract the cell and its neighbours
-            cell_and_neighbours = self.grid.get_neighbouring_cells(cell);
-            # we loop over all the particles in that cell
-            for particle in cell: # this needs to be adjusted as soon as I have the cell class
-                # for every particle, we then loop over only the cell itself 
-                # and the neighbouring cells. 
-                for local_cell in cell_and_neighbours:
-                    # then we get the particles of the neighbouring cell 
-                    for local_particle in local_cell:
-                        # now we can evaluate the pressure and viscosity contributions from each particle.
-                        self.p2p_eval.evaluate_acceleration_term_pressure(particle1=particle, particle2=local_particle);
-                        self.p2p_eval.evaluate_acceleration_term_viscosity(particle1=particle, particle2=local_particle);
-                # the last step is to add the body force term to that specific particle
-                self.p2p_eval.evaluate_acceleration_term_body_force(particle1=particle);
+        for cell in self.matrix_of_cells:
+            if (self.grid.is_locally_owned(cell)):
+                # we extract the cell and its neighbours
+                cell_and_neighbours = self.grid.get_neighbouring_cells(cell);
+                # we loop over all the particles in that cell
+                for particle in cell: # this needs to be adjusted as soon as I have the cell class
+                    # for every particle, we then loop over only the cell itself 
+                    # and the neighbouring cells. 
+                    for local_cell in cell_and_neighbours:
+                        # then we get the particles of the neighbouring cell 
+                        for local_particle in local_cell:
+                            # now we can evaluate the pressure and viscosity contributions from each particle.
+                            self.p2p_eval.evaluate_acceleration_term_pressure(particle1=particle, particle2=local_particle);
+                            self.p2p_eval.evaluate_acceleration_term_viscosity(particle1=particle, particle2=local_particle);
+                    # the last step is to add the body force term to that specific particle
+                    self.p2p_eval.evaluate_acceleration_term_body_force(particle1=particle);
     
     # we do a separate time-loop over the cells. 
     # we cannot do it in cell_loop_acceleration, as it would overwrite the position
