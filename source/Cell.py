@@ -52,8 +52,6 @@ class Cell:
     def tell_grid_particle_has_moved():
         return 0;
 
-    # add particle to the the array of particles
-    def add_particle(self):
-        return 0;
+    
     def get_global_index(self):
         return self.lower_left;

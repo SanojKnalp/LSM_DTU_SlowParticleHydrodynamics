@@ -47,6 +47,13 @@ class Grid:
     def request_ghost_cells(self):
         return 0;
 
+    def insert_particle(self, particle):
+        x_index = int(np.floor(particle.position[0]/self.cell_length));
+        y_index = int(np.floor(particle.position[1]/self.cell_length));
+        self.matrix_of_cells[x_index, y_index].particles.append(particle);
+    
+
+
     # tests if a cell is locally_owned
     # important for parallel handling of cells
     def is_locally_owned(self, cell):

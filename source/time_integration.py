@@ -18,14 +18,14 @@ class VelocityVerlet:
     # between cells after the second step
 
     # kick
-    def first_kick(self, particle, acceleration):
-        particle.velocity = particle.velocity + (self.dt/2)*acceleration;
+    def first_kick(self, particle):
+        particle.velocity = particle.velocity + (self.dt/2)*particle.acceleration;
     # drift
     def drift(self, particle):
         particle.position = particle.position + (self.dt)*particle.velocity;
     #kick
-    def second_kick(self, particle, acceleration_next):
-        particle.velocity = particle.velocity + (self.dt/2)*acceleration_next;
+    def second_kick(self, particle):
+        particle.velocity = particle.velocity + (self.dt/2)*particle.acceleration;
         self.current_time += self.dt;
 
     def reached_final_time(self):

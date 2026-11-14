@@ -5,9 +5,9 @@ from SmoothingKernel import SmoothingKernel
 
 
 class Particle2ParticleEvaluator:
-    def __init__(self, speed_of_sound, reference_density, smoothing_kernel, body_force):
+    def __init__(self, speed_of_sound, reference_density, smoothing_length, body_force):
         self.eos = EoS(speed_of_sound, reference_density);
-        self.kernel = SmoothingKernel(smoothing_kernel);
+        self.kernel = SmoothingKernel(smoothing_length);
         self.b = body_force;
 
     def evaluate_density_and_pressure(self, particle1, particle2):
@@ -23,10 +23,11 @@ class Particle2ParticleEvaluator:
         return 2*particle1.viscosity*particle2.viscosity/(particle1.viscosity + particle2.viscosity);
 
     def evaluate_volume_term(self, particle1, particle2):
+        
         return (particle1.mass/particle1.density)**2 + (particle2.mass/particle2.density)**2;
 
     def evaluate_acceleration_term_pressure(self, particle1, particle2):
-        if(particle1.position == particle2.position):
+        if(np.array_equal(particle1.position,particle2.position)):
             return;
         p_tilde = self.evaluate_p_tilde(particle1, particle2);
         r_ij = particle1.position - particle2.position;
@@ -37,6 +38,8 @@ class Particle2ParticleEvaluator:
         particle1.acceleration +=  (1/(particle1.mass))*volume_term*(- p_tilde*W_ij_r_ij*e_ij );
 
     def evaluate_acceleration_term_viscosity(self, particle1, particle2):
+        if(particle1.viscosity == 0 or particle2.viscosity == 0):
+            return 0;
         eta_tilde = self.evaluate_eta_tilde(particle1, particle2);
         volume_term = self.evaluate_volume_term(particle1, particle2);
         r_ij = particle1.position - particle2.position;
