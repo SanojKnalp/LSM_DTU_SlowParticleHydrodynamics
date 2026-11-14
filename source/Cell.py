@@ -27,8 +27,8 @@ class Cell:
         self.is_at_boundary = self.buffer[5];
         self.is_at_boundary = self.boundary_check();
 
-        self.array_of_particles = self.buffer[6];
-        self.array_of_particles = []; 
+        self.particles = self.buffer[6];
+        self.particles = []; 
 
     def boundary_check(self):
         if self.lower_left[0] == 0 or self.lower_left[1] == 0:

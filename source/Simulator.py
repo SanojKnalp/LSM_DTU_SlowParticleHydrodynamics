@@ -3,18 +3,18 @@ from time_integration import VelocityVerlet
 from grid import Grid
 
 class Simulator:
-    def __init__(self, speed_of_sound, reference_density, smoothing_kernel, body_force, time_step_size, final_time):
+    def __init__(self, speed_of_sound, reference_density, smoothing_kernel, body_force, time_step_size, final_time, grid_lengths, subdivisions):
         self.p2p_eval = Particle2ParticleEvaluator(speed_of_sound, reference_density, smoothing_kernel, body_force);
         self.verlet = VelocityVerlet(time_step_size, final_time);
-        self.grid = Grid()
+        self.grid = Grid(grid_lengths, subdivisions);
 
     # we need separate loops as we need to precompute the densities, because we need them a lot
     def cell_loop_density_and_pressure(self):
             for cell in self.grid.matrix_of_cells:
                 cell_and_neighbours = self.grid.get_neighbouring_cells(cell);
-                for particle in cell: # this needs to be adjusted as soon as I have the cell class
+                for particle in cell.particles: # this needs to be adjusted as soon as I have the cell class
                     for local_cell in cell_and_neighbours:
-                        for local_particle in local_cell: # adjust as well, because we need access to the particle list
+                        for local_particle in local_cell.particles: # adjust as well, because we need access to the particle list
                             self.p2p_eval.evaluate_density_and_pressure(particle1=particle, particle2=local_particle);
     
     # the next is to evaluate the acceleration
@@ -25,12 +25,12 @@ class Simulator:
                 # we extract the cell and its neighbours
                 cell_and_neighbours = self.grid.get_neighbouring_cells(cell);
                 # we loop over all the particles in that cell
-                for particle in cell: # this needs to be adjusted as soon as I have the cell class
+                for particle in cell.particles: # this needs to be adjusted as soon as I have the cell class
                     # for every particle, we then loop over only the cell itself 
                     # and the neighbouring cells. 
                     for local_cell in cell_and_neighbours:
                         # then we get the particles of the neighbouring cell 
-                        for local_particle in local_cell:
+                        for local_particle in local_cell.particles:
                             # now we can evaluate the pressure and viscosity contributions from each particle.
                             self.p2p_eval.evaluate_acceleration_term_pressure(particle1=particle, particle2=local_particle);
                             self.p2p_eval.evaluate_acceleration_term_viscosity(particle1=particle, particle2=local_particle);
@@ -42,9 +42,9 @@ class Simulator:
     # and we need them at the exact same time-step 
     def cell_loop_time_integration_first_kick_and_drift(self):
         # we loop over all the cells we own
-        for cell in self.grid.list_of_owned_cells:
+        for cell in self.grid.matrix_of_cells:
             # we loop over the particles in that cell
-            for particle in cell:
+            for particle in cell.particles:
                 # we execute the first kick and drift
                 self.verlet.first_kick(particle=particle);
                 self.verlet.drift(particle=particle);
@@ -55,9 +55,9 @@ class Simulator:
 
     def cell_loop_time_integration_second_kick(self):
         # we loop over all the cells we own
-        for cell in self.grid.list_of_owned_cells:
+        for cell in self.grid.matrix_of_cells:
             # we loop over the particles in that cell
-            for particle in cell:
+            for particle in cell.particles:
                 self.verlet.second_kick(particle=particle);
                 particle.reset_acceleration();
 

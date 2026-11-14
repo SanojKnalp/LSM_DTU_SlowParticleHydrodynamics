@@ -13,12 +13,36 @@ class Grid:
         self.matrix_of_cells = np.empty((subdivisions[0], subdivisions[1]), dtype=object);
         self.bool_matrix_ghost = np.empty((subdivisions[0],subdivisions[1]), dtype=bool);
         self.cell_length = lengths[0]/subdivisions[0];
+        self.max_ids = subdivisions-1;
 
         self.setup_cells();
 
     def get_neighbouring_cells(self, cell):
         id = cell.lower_left;
-        
+        if (id[0] == 0):    
+            if (id[1] == 0):
+                return self.matrix_of_cells[:2, :2]; # works
+            elif (id[1] == self.max_ids[1]):
+                return self.matrix_of_cells[0:2, (id[1]-1):]; # works
+            else:
+                return self.matrix_of_cells[0:2, (id[1]-1):(id[1]+2)]; # works
+    
+        elif (id[0] == self.max_ids[0]):
+            if (id[1] == 0):
+                return self.matrix_of_cells[(id[0]-1):, 0:2]; # works
+            elif (id[1] == self.max_ids[1]):
+                return self.matrix_of_cells[(id[0]-1):, (id[1]-1):]; # works
+            else:
+                return self.matrix_of_cells[(id[0]-1):, (id[1]-1):(id[1]+2)]; #works
+    
+        else:
+            if(id[1] == 0):
+                return self.matrix_of_cells[(id[0]-1):(id[0]+2), 0:2]; #works
+            elif (id[1] == self.max_ids[1]):
+                return self.matrix_of_cells[(id[0]-1):(id[0]+2), (id[1]-1):]; #works
+            else:
+                return self.matrix_of_cells[(id[0]-1):(id[0]+2), (id[1]-1):(id[1]+2)]; # works
+    
 
     def request_ghost_cells(self):
         return 0;
@@ -37,15 +61,3 @@ class Grid:
                 self.bool_matrix_ghost[i,j] = True;
                 # we now compute the input quantities for the cells.
                 self.matrix_of_cells[i,j] = Cell(np.array([i,j]) ,self.cell_length, self.bounding_box[0], self.bounding_box[1]);
-
-
-
-lengths = np.array([4.0, 4.0]);
-subdiv = np.array([4, 4]);
-
-grid = Grid(lengths, subdiv);
-
-#print(grid.matrix_of_cells);
-print(grid.bool_matrix_ghost);
-print(grid.matrix_of_cells[2,1].is_at_boundary);
-print(grid.is_locally_owned(grid.matrix_of_cells[2,1]));
