@@ -9,6 +9,7 @@ class VelocityVerlet:
         self.dt = dt;
         self.T = simulation_time;
         self.current_time = 0;
+        self.current_time_step = 0;
 
     # initial draft of our time-stepper. The acceleration part
     # needs to be reworked later when we have it in place
@@ -28,6 +29,7 @@ class VelocityVerlet:
         particle.velocity = particle.velocity + (self.dt/2)*particle.acceleration;
     def advance_in_time(self):
         self.current_time +=self.dt;
+        self.current_time_step +=1;
 
     def reached_final_time(self):
         if (self.current_time < self.T):

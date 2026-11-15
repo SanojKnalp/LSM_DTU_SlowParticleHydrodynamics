@@ -22,5 +22,8 @@ class SmoothingKernel:
 
     # same thing here, but for the derivative
     def evaluate_gradient(self, distance):
-        return -self.normalization_constant*(12*distance*(distance-self.smoothing_radius)**2)/(self.smoothing_radius**4);
+        R = distance/self.smoothing_radius;
+        if (R<=1):
+            return -12*self.normalization_constant*R/self.smoothing_radius*(R-1)**2;
+        return 0;
 
