@@ -10,10 +10,9 @@ class Particle2ParticleEvaluator:
         self.kernel = SmoothingKernel(smoothing_length);
         self.b = body_force;
 
-    def evaluate_density_and_pressure(self, particle1, particle2):
+    def evaluate_density(self, particle1, particle2):
         dist = np.linalg.norm(particle1.position - particle2.position);
         particle1.density += self.kernel.evaluate(distance=dist)*particle1.mass;
-        self.eos.evaluate_pressure(particle1);
 
 
     def evaluate_p_tilde(self, particle1, particle2):

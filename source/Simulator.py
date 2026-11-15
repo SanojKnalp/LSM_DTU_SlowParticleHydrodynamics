@@ -21,8 +21,8 @@ class Simulator:
                 for particle in cell.particles: # this needs to be adjusted as soon as I have the cell class
                     for local_cell in cell_and_neighbours.flat:
                         for local_particle in local_cell.particles: # adjust as well, because we need access to the particle list
-                            self.p2p_eval.evaluate_density_and_pressure(particle1=particle, particle2=local_particle);
-    
+                            self.p2p_eval.evaluate_density(particle1=particle, particle2=local_particle);
+                    self.p2p_eval.eos.evaluate_pressure(particle=particle);
     # the next is to evaluate the acceleration
     def cell_loop_acceleration(self):
         # we loop over all the cells we own
@@ -121,7 +121,7 @@ class Simulator:
             self.cell_loop_density_and_pressure();
             # now the acceleration
             self.cell_loop_acceleration();
-            self.print_particle_position();
+            #self.print_particle_position();
             # we do the second kick
             self.cell_loop_time_integration_second_kick();
             # now if we reached the final time-step, we break.
@@ -137,6 +137,6 @@ class Simulator:
             self.cell_loop_acceleration();
 
         
-sim = Simulator(speed_of_sound=1, reference_density=1600, smoothing_length=0.5, body_force=np.array([0, -10]), time_step_size=1e-3, final_time=1e-1, grid_lengths=np.array([5, 5]), subdivisions=np.array([4,4]));
+sim = Simulator(speed_of_sound=1, reference_density=30, smoothing_length=0.2, body_force=np.array([0, -9.81]), time_step_size=1e-4, final_time=1e0, grid_lengths=np.array([5, 5]), subdivisions=np.array([4,4]));
 
 sim.run();
