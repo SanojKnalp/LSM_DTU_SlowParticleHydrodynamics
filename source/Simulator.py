@@ -102,7 +102,9 @@ class Simulator:
     def correct_boundary_and_moved(self):
         for cell in self.grid.matrix_of_cells.flat:
             for i in range(len(cell.particles)-1, 0, -1):
+                print(cell.particles[i].position);
                 cell.resolve_collision(cell.particles[i]);
+                print(cell.particles[i].position);
                 if (cell.particle_outside_cell(cell.particles[i])):
                     self.grid.move_particle_to_correct_cell(cell=cell, particle_index=i);
 
@@ -125,7 +127,7 @@ class Simulator:
             # we do the second kick
             self.cell_loop_time_integration_second_kick();
             # now if we reached the final time-step, we break.
-            self.write_points_to_vtk();
+            #self.write_points_to_vtk();
             if(self.verlet.reached_final_time()):
                 break;
 

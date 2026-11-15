@@ -48,10 +48,18 @@ class Cell:
     # fine
     def resolve_collision(self, particle):
         if self.is_at_boundary:
-            if ((particle.position[0]-particle.radius) <= 0) or ((particle.position[0] + particle.radius) >= (self.lower_left[0]+1)*self.cell_length):
+            if ((particle.position[0]-particle.radius) <= 0):
                 particle.velocity[0] = -particle.velocity[0];
-            if ((particle.position[1]-particle.radius) <= 0) or ((particle.position[1] + particle.radius) >= (self.lower_left[1]+1)*self.cell_length):
+                particle.position[0] = particle.radius;
+            elif ((particle.position[0] + particle.radius) >= (self.lower_left[0]+1)*self.cell_length):
+                particle.velocity[0] = -particle.velocity[0];
+                particle.position[0] = (self.lower_left[0]+1)*self.cell_length - particle.radius;
+            if ((particle.position[1]-particle.radius) <= 0):
                 particle.velocity[1] = -particle.velocity[1];
+                particle.position[1] = particle.radius;
+            elif ((particle.position[1] + particle.radius) >= (self.lower_left[1]+1)*self.cell_length):
+                particle.velocity[1] = -particle.velocity[1];
+                particle.position[1] = (self.lower_left[1]+1)*self.cell_length - particle.radius;
 
     # if a particle has moved outside of the cell domain,
     # we let grid know and the grid takes care of the 

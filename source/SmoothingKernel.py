@@ -15,7 +15,10 @@ class SmoothingKernel:
         self.normalization_constant = 5/(np.pi*((self.smoothing_radius)**2))
     def evaluate(self, distance):
         R = distance/self.smoothing_radius;
-        return (1+3*R)*((1-R)**3)*self.normalization_constant;
+        if (R<=1):
+            return (1+3*R)*((1-R)**3)*self.normalization_constant;
+        return 0;
+        
 
     # same thing here, but for the derivative
     def evaluate_gradient(self, distance):

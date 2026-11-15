@@ -49,6 +49,7 @@ class Grid:
         return 0;
 
     def insert_particle(self, particle):
+        print(particle.position);
         x_index = int(np.floor(particle.position[0]/self.cell_length));
         y_index = int(np.floor(particle.position[1]/self.cell_length));
         self.matrix_of_cells[x_index, y_index].particles.append(particle);
