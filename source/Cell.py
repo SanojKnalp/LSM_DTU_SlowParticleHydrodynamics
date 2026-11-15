@@ -38,6 +38,13 @@ class Cell:
         else:
             return False;
 
+    def particle_outside_cell(self, particle):
+        if ((particle.position[0]-particle.radius) < self.lower_left[0]*self.cell_length) or ((particle.position[0] + particle.radius) > (self.lower_left[0]+1)*self.cell_length):
+            return True
+        if ((particle.position[1]-particle.radius) < self.lower_left[0]*self.cell_length) or ((particle.position[1] + particle.radius) > (self.lower_left[1]+1)*self.cell_length):
+            return True
+        return False;
+
     # fine
     def resolve_collision(self, particle):
         if self.is_at_boundary:

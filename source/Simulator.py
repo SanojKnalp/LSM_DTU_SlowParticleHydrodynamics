@@ -3,12 +3,14 @@ from time_integration import VelocityVerlet
 from grid import Grid
 from Particle import Particle
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 
 class Simulator:
     def __init__(self, speed_of_sound, reference_density, smoothing_length, body_force, time_step_size, final_time, grid_lengths, subdivisions):
         self.p2p_eval = Particle2ParticleEvaluator(speed_of_sound, reference_density, smoothing_length, body_force);
         self.verlet = VelocityVerlet(time_step_size, final_time);
-        self.grid = Grid(grid_lengths, subdivisions);
+        self.grid = Grid(grid_lengths, subdivisions, smoothing_length);
         self.particle_radius = smoothing_length;
 
     # we need separate loops as we need to precompute the densities, because we need them a lot
@@ -62,14 +64,13 @@ class Simulator:
             for particle in cell.particles:
                 self.verlet.second_kick(particle=particle);
                 particle.reset_acceleration();
-
+        self.verlet.advance_in_time();
     def spawn_particles(self):
-        dx = self.grid.bounding_box[0]/11;
-        for i in range(5):
-            pos = np.array([0.1+dx*i, 1]);
+        for i in range(20):
+            pos1 = np.array([np.random.uniform(0, self.grid.bounding_box[0]), np.random.uniform(0, self.grid.bounding_box[1])]);
             vel = np.zeros(2);
-            particle = Particle(pos, vel);
-            self.grid.insert_particle(particle);
+            particle1 = Particle(pos1, vel, self.particle_radius);
+            self.grid.insert_particle(particle1);
 
     def print_particle_position(self):
         # we loop over all the cells we own
@@ -78,14 +79,23 @@ class Simulator:
             print(cell.particles);
         for cell in self.grid.matrix_of_cells.flat:
             for particle in cell.particles:
-                print(particle.position);
+                print('pos',particle.position);
+
+
+    def correct_boundary_and_moved(self):
+        for cell in self.grid.matrix_of_cells.flat:
+            for i in range(len(cell.particles)-1, 0, -1):
+                cell.resolve_collision(cell.particles[i]);
+                if (cell.particle_outside_cell(cell.particles[i])):
+                    self.grid.move_particle_to_correct_cell(cell=cell, particle_index=i);
+
+
     def run(self):
 
         self.spawn_particles();
-        self.print_particle_position();
+        
         self.cell_loop_density_and_pressure();
         self.cell_loop_acceleration();
-        
         while (True):
             self.cell_loop_time_integration_first_kick_and_drift();
             # position and velocity have changed, so we need to run the full cell loop
@@ -94,19 +104,22 @@ class Simulator:
             self.cell_loop_density_and_pressure();
             # now the acceleration
             self.cell_loop_acceleration();
+            #self.print_particle_position();
             # we do the second kick
             self.cell_loop_time_integration_second_kick();
             # now if we reached the final time-step, we break.
+            print(self.verlet.current_time);
             if(self.verlet.reached_final_time()):
                 break;
+
+            self.correct_boundary_and_moved();
+            
             # we do not need to recompute the densities, as they have not changed. Same for pressure. 
             # This is because the position did not change. 
             # we only need to overwrite the acceleration
             self.cell_loop_acceleration();
 
-        self.print_particle_position();
-
         
-sim = Simulator(speed_of_sound=1.0, reference_density=1, smoothing_length=0.01, body_force=np.zeros(2), time_step_size=1e-4, final_time=1, grid_lengths=np.array([5, 5]), subdivisions=np.array([5,5]));
+sim = Simulator(speed_of_sound=1, reference_density=1600, smoothing_length=0.1, body_force=np.array([0, -1]), time_step_size=1e-4, final_time=1e-3, grid_lengths=np.array([1, 1]), subdivisions=np.array([4,4]));
 
 sim.run();

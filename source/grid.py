@@ -8,12 +8,13 @@ from mpi4py import MPI
 class Grid:
     # length contains three entries:
     # length in x, length in y and cell length
-    def __init__(self, lengths,  subdivisions):
+    def __init__(self, lengths,  subdivisions, smoothing_length):
         self.bounding_box = lengths;
         self.matrix_of_cells = np.empty((subdivisions[0], subdivisions[1]), dtype=object);
         self.bool_matrix_ghost = np.empty((subdivisions[0],subdivisions[1]), dtype=bool);
         self.cell_length = lengths[0]/subdivisions[0];
         self.max_ids = subdivisions-1;
+        self.smoothing_length = smoothing_length;
 
         self.setup_cells();
 
@@ -51,6 +52,15 @@ class Grid:
         x_index = int(np.floor(particle.position[0]/self.cell_length));
         y_index = int(np.floor(particle.position[1]/self.cell_length));
         self.matrix_of_cells[x_index, y_index].particles.append(particle);
+
+    def move_particle_to_correct_cell(self, cell, particle_index):
+        # we create an instance of the moved particle
+        moved_particle = cell.particles[particle_index];
+        # we delete the old particle
+        del cell.particles[particle_index];
+        # now we figure out the new position
+        self.insert_particle(moved_particle);
+
     
 
 

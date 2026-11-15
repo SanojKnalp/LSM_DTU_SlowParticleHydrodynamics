@@ -26,10 +26,12 @@ class VelocityVerlet:
     #kick
     def second_kick(self, particle):
         particle.velocity = particle.velocity + (self.dt/2)*particle.acceleration;
-        self.current_time += self.dt;
+    def advance_in_time(self):
+        self.current_time +=self.dt;
 
     def reached_final_time(self):
         if (self.current_time < self.T):
             return False;
-        return True;
+        else :
+            return True;
         
