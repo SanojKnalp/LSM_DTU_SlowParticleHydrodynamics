@@ -98,7 +98,7 @@ class Simulator:
 
     def correct_boundary_and_moved(self):
         for cell in self.grid.matrix_of_cells.flat:
-            for i in range(len(cell.particles)-1, 0, -1):
+            for i in range(len(cell.particles)-1, -1, -1):
                 cell.resolve_collision(cell.particles[i]);
                 if (cell.particle_outside_cell(cell.particles[i])):
                     self.grid.move_particle_to_correct_cell(cell=cell, particle_index=i);
@@ -121,13 +121,15 @@ class Simulator:
             #self.print_particle_position();
             # we do the second kick
             self.cell_loop_time_integration_second_kick();
+            self.correct_boundary_and_moved();
             # now if we reached the final time-step, we break.
-            self.write_points_to_vtk();
+            if (self.verlet.current_time_step %50 == 0):
+                self.write_points_to_vtk();
             print(self.verlet.current_time);
             if(self.verlet.reached_final_time()):
                 break;
 
-            self.correct_boundary_and_moved();
+            
             
             # we do not need to recompute the densities, as they have not changed. Same for pressure. 
             # This is because the position did not change. 
@@ -135,6 +137,6 @@ class Simulator:
             self.cell_loop_acceleration();
 
         
-sim = Simulator(speed_of_sound=1, reference_density=30, smoothing_length=0.2, body_force=np.array([0, -9.81]), time_step_size=1e-4, final_time=1e0, grid_lengths=np.array([5, 5]), subdivisions=np.array([4,4]));
+sim = Simulator(speed_of_sound=1, reference_density=30, smoothing_length=0.2, body_force=np.array([0, -5]), time_step_size=1e-4, final_time=1e0, grid_lengths=np.array([5, 5]), subdivisions=np.array([4,4]));
 
 sim.run();
