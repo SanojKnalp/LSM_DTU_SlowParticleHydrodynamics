@@ -5,6 +5,7 @@ from Particle import Particle
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+import vtk
 
 class Simulator:
     def __init__(self, speed_of_sound, reference_density, smoothing_length, body_force, time_step_size, final_time, grid_lengths, subdivisions):
@@ -66,7 +67,7 @@ class Simulator:
                 particle.reset_acceleration();
         self.verlet.advance_in_time();
     def spawn_particles(self):
-        for i in range(20):
+        for i in range(50):
             pos1 = np.array([np.random.uniform(0, self.grid.bounding_box[0]), np.random.uniform(0, self.grid.bounding_box[1])]);
             vel = np.zeros(2);
             particle1 = Particle(pos1, vel, self.particle_radius);
@@ -77,9 +78,25 @@ class Simulator:
         for cell in self.grid.matrix_of_cells.flat:
             # we loop over the particles in that cell
             print(cell.particles);
+        i = 0;
         for cell in self.grid.matrix_of_cells.flat:
             for particle in cell.particles:
                 print('pos',particle.position);
+                i+=1;
+        print(i);
+
+    def write_points_to_vtk(self):
+        vtk_points = vtk.vtkPoints();
+        for cell in self.grid.matrix_of_cells.flat:
+            for particle in cell.particles:
+                vtk_points.InsertNextPoint(particle.position[0], particle.position[1], 0.0);
+        polydata = vtk.vtkPolyData()
+        polydata.SetPoints(vtk_points)
+        writer = vtk.vtkPolyDataWriter()
+        file_name = f"positions_t={self.verlet.current_time}.vtk"
+        writer.SetFileName(file_name);
+        writer.SetInputData(polydata)
+        writer.Write()
 
 
     def correct_boundary_and_moved(self):
@@ -104,11 +121,11 @@ class Simulator:
             self.cell_loop_density_and_pressure();
             # now the acceleration
             self.cell_loop_acceleration();
-            #self.print_particle_position();
+            self.print_particle_position();
             # we do the second kick
             self.cell_loop_time_integration_second_kick();
             # now if we reached the final time-step, we break.
-            print(self.verlet.current_time);
+            self.write_points_to_vtk();
             if(self.verlet.reached_final_time()):
                 break;
 
@@ -120,6 +137,6 @@ class Simulator:
             self.cell_loop_acceleration();
 
         
-sim = Simulator(speed_of_sound=1, reference_density=1600, smoothing_length=0.1, body_force=np.array([0, -1]), time_step_size=1e-4, final_time=1e-3, grid_lengths=np.array([1, 1]), subdivisions=np.array([4,4]));
+sim = Simulator(speed_of_sound=1, reference_density=1600, smoothing_length=0.5, body_force=np.array([0, -10]), time_step_size=1e-3, final_time=1e-1, grid_lengths=np.array([5, 5]), subdivisions=np.array([4,4]));
 
 sim.run();
