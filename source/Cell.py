@@ -5,7 +5,7 @@ from Particle import Particle
 # to potentially resolve collisions as this is the cell's task
 # Also WIP
 class Cell:
-    def __init__(self, lower_left, length, global_length_x, global_length_y):
+    def __init__(self, lower_left, length, global_length_x, global_length_y, mpi_rank):
         self.lower_left = lower_left; # we have cubed cells, so we will use the lower point and we have completely defined the cell
 
         self.cell_length = length;
@@ -16,6 +16,8 @@ class Cell:
         self.is_at_boundary = self.boundary_check();
 
         self.particles = []; 
+
+        self.rank_it_owns = mpi_rank;
 
     def boundary_check(self):
         if self.lower_left[0] == 0 or self.lower_left[1] == 0:
