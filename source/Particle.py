@@ -8,17 +8,12 @@ import numpy as np
 # maybe also the particle id or something?
 class Particle:
     def __init__(self, pos, vel, smoothing_length, viscosity = 0, mass = 1):
-        self.buffer = np.zeros(10, dtype=np.float64);
-        self.position = self.buffer[:2];
         self.position = pos;
-        self.velocity = self.buffer[2:4];
         self.velocity = vel;
-        self.acceleration = self.buffer[4:6];
-        self.mass = self.buffer[6];
+        self.acceleration = np.zeros(2, dtype=np.float64);
         self.mass = mass;
-        self.density = self.buffer[7];
-        self.pressure = self.buffer[8];
-        self.viscosity = self.buffer[9]; # the viscosity is constant for 
+        self.density = 0;
+        self.pressure = 0;
         self.viscosity = viscosity;
         self.radius = smoothing_length;
 
@@ -28,3 +23,8 @@ class Particle:
         self.acceleration = np.array([0.0, 0.0]);
     def reset_acceleration(self):
         self.acceleration = np.array([0.0, 0.0]);
+
+    def pack_into_buffer(self):
+        return np.array([self.position[0], self.position[1], self.velocity[0], self.velocity[1], self.mass, self.density, self.pressure, self.viscosity, self.radius], dtype=np.float64);
+
+
