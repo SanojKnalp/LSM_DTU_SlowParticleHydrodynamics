@@ -27,6 +27,7 @@ class Simulator:
                             for local_particle in local_cell.particles: # adjust as well, because we need access to the particle list
                                 self.p2p_eval.evaluate_density(particle1=particle, particle2=local_particle);
                         self.p2p_eval.eos.evaluate_pressure(particle=particle);
+    
     # the next is to evaluate the acceleration
     def cell_loop_acceleration(self):
         # we loop over all the cells we own
