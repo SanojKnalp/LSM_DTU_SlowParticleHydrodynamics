@@ -28,9 +28,9 @@ class Cell:
             return False;
 
     def particle_outside_cell(self, particle):
-        if ((particle.position[0]-particle.radius) < self.lower_left[0]*self.cell_length) or ((particle.position[0] + particle.radius) > (self.lower_left[0]+1)*self.cell_length):
+        if ((particle.position[0]) < self.lower_left[0]*self.cell_length) or ((particle.position[0]) > (self.lower_left[0]+1)*self.cell_length):
             return True
-        if ((particle.position[1]-particle.radius) < self.lower_left[1]*self.cell_length) or ((particle.position[1] + particle.radius) > (self.lower_left[1]+1)*self.cell_length):
+        if ((particle.position[1]) < self.lower_left[1]*self.cell_length) or ((particle.position[1]) > (self.lower_left[1]+1)*self.cell_length):
             return True
         return False;
 

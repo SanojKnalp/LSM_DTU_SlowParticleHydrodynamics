@@ -11,6 +11,9 @@ import vtk
 class Simulator:
     def __init__(self, speed_of_sound, reference_density, smoothing_length, body_force, time_step_size, final_time, grid_lengths, subdivisions, communicator, divide_x=True):
         self.mpi_communicator = communicator;
+        self.divide_x = divide_x;
+        self.global_grid_length = self.grid_lengths;
+        self.global_subdivisions = subdivisions;
         self.p2p_eval = Particle2ParticleEvaluator(speed_of_sound, reference_density, smoothing_length, body_force);
         self.verlet = VelocityVerlet(time_step_size, final_time);
         self.grid = Grid(grid_lengths, subdivisions, self.mpi_communicator);
@@ -115,8 +118,6 @@ class Simulator:
                     if (cell.particle_outside_cell(cell.particles[i])):
                         self.grid.move_particle_to_correct_cell(cell=cell, particle_index=i);
 
-    def compute_first_local_partitioning(self, comm):
-        return 0;
 
 
     def run(self):
