@@ -8,15 +8,14 @@ from mpi4py import MPI
 class Grid:
     # length contains three entries:
     # length in x, length in y and cell length
-    def __init__(self, lengths,  subdivisions, smoothing_length, communicator):
+    def __init__(self, lengths,  subdivisions, communicator):
+        self.communicator = communicator;
         self.bounding_box = lengths;
         self.matrix_of_cells = np.empty((subdivisions[0], subdivisions[1]), dtype=object);
         self.bool_matrix_ghost = np.empty((subdivisions[0],subdivisions[1]), dtype=bool);
         self.cell_length = lengths[0]/subdivisions[0];
-        self.max_ids = subdivisions-1;
-        self.smoothing_length = smoothing_length;
+        self.max_ids = subdivisions-1; 
 
-        self.communicator = communicator;
 
         self.setup_cells();
 

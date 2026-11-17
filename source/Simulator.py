@@ -9,11 +9,11 @@ from mpi4py import MPI
 import vtk
 
 class Simulator:
-    def __init__(self, speed_of_sound, reference_density, smoothing_length, body_force, time_step_size, final_time, grid_lengths, subdivisions, communicator):
+    def __init__(self, speed_of_sound, reference_density, smoothing_length, body_force, time_step_size, final_time, grid_lengths, subdivisions, communicator, divide_x=True):
         self.mpi_communicator = communicator;
         self.p2p_eval = Particle2ParticleEvaluator(speed_of_sound, reference_density, smoothing_length, body_force);
         self.verlet = VelocityVerlet(time_step_size, final_time);
-        self.grid = Grid(grid_lengths, subdivisions, smoothing_length, self.mpi_communicator);
+        self.grid = Grid(grid_lengths, subdivisions, self.mpi_communicator);
         self.particle_radius = smoothing_length;
         
 
