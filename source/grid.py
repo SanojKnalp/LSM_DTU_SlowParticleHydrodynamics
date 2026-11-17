@@ -8,13 +8,15 @@ from mpi4py import MPI
 class Grid:
     # length contains three entries:
     # length in x, length in y and cell length
-    def __init__(self, lengths,  subdivisions, smoothing_length):
+    def __init__(self, lengths,  subdivisions, smoothing_length, communicator):
         self.bounding_box = lengths;
         self.matrix_of_cells = np.empty((subdivisions[0], subdivisions[1]), dtype=object);
         self.bool_matrix_ghost = np.empty((subdivisions[0],subdivisions[1]), dtype=bool);
         self.cell_length = lengths[0]/subdivisions[0];
         self.max_ids = subdivisions-1;
         self.smoothing_length = smoothing_length;
+
+        self.communicator = communicator;
 
         self.setup_cells();
 
@@ -51,6 +53,8 @@ class Grid:
     def insert_particle(self, particle):
         x_index = int(np.floor(particle.position[0]/self.cell_length));
         y_index = int(np.floor(particle.position[1]/self.cell_length));
+        if (not self.bool_matrix_ghost[x_index, y_index]):
+            self.send_particle_to_different_rank(particle=particle, rank_t0_send_to=self.matrix_of_cells[x_index, y_index].rank_it_owns);
         self.matrix_of_cells[x_index, y_index].particles.append(particle);
 
     def move_particle_to_correct_cell(self, cell, particle_index):
@@ -62,7 +66,8 @@ class Grid:
         self.insert_particle(moved_particle);
 
     
-    #def repartition(self):
+    def send_particle_to_different_rank(self, particle, rank_to_send_to):
+        self.communicator.Isend([particle.pack_into_buffer(), MPI.FLOAT], dest=rank_to_send_to, tag = 30);
 
 
     # tests if a cell is locally_owned
@@ -78,4 +83,4 @@ class Grid:
                 # we have not implemented any parallelization yet, so all are owned
                 self.bool_matrix_ghost[i,j] = True;
                 # we now compute the input quantities for the cells.
-                self.matrix_of_cells[i,j] = Cell(np.array([i,j]) ,self.cell_length, self.bounding_box[0], self.bounding_box[1]);
+                self.matrix_of_cells[i,j] = Cell(np.array([i,j]) ,self.cell_length, self.bounding_box[0], self.bounding_box[1], self.communicator.Get_rank());

@@ -9,11 +9,13 @@ from mpi4py import MPI
 import vtk
 
 class Simulator:
-    def __init__(self, speed_of_sound, reference_density, smoothing_length, body_force, time_step_size, final_time, grid_lengths, subdivisions):
+    def __init__(self, speed_of_sound, reference_density, smoothing_length, body_force, time_step_size, final_time, grid_lengths, subdivisions, communicator):
+        self.mpi_communicator = communicator;
         self.p2p_eval = Particle2ParticleEvaluator(speed_of_sound, reference_density, smoothing_length, body_force);
         self.verlet = VelocityVerlet(time_step_size, final_time);
-        self.grid = Grid(grid_lengths, subdivisions, smoothing_length);
+        self.grid = Grid(grid_lengths, subdivisions, smoothing_length, self.mpi_communicator);
         self.particle_radius = smoothing_length;
+        
 
     # we need separate loops as we need to precompute the densities, because we need them a lot
     def cell_loop_density_and_pressure(self):
@@ -148,7 +150,7 @@ class Simulator:
             # we only need to overwrite the acceleration
             self.cell_loop_acceleration();
 
-        
-sim = Simulator(speed_of_sound=1, reference_density=1, smoothing_length=0.25, body_force=np.array([0, 0]), time_step_size=1e-4, final_time=1e0, grid_lengths=np.array([5, 5]), subdivisions=np.array([10,10]));
+comm = MPI.COMM_WORLD;        
+sim = Simulator(speed_of_sound=1, reference_density=1, smoothing_length=0.25, body_force=np.array([0, 0]), time_step_size=1e-4, final_time=1e0, grid_lengths=np.array([5, 5]), subdivisions=np.array([10,10]), communicator=comm);
 
 sim.run();
