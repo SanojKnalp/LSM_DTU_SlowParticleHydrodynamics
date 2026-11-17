@@ -5,6 +5,7 @@ from Particle import Particle
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+from mpi4py import MPI
 import vtk
 
 class Simulator:
@@ -17,12 +18,13 @@ class Simulator:
     # we need separate loops as we need to precompute the densities, because we need them a lot
     def cell_loop_density_and_pressure(self):
             for cell in self.grid.matrix_of_cells.flat:
-                cell_and_neighbours = self.grid.get_neighbouring_cells(cell);
-                for particle in cell.particles: # this needs to be adjusted as soon as I have the cell class
-                    for local_cell in cell_and_neighbours.flat:
-                        for local_particle in local_cell.particles: # adjust as well, because we need access to the particle list
-                            self.p2p_eval.evaluate_density(particle1=particle, particle2=local_particle);
-                    self.p2p_eval.eos.evaluate_pressure(particle=particle);
+                if (self.grid.is_locally_owned(cell)):
+                    cell_and_neighbours = self.grid.get_neighbouring_cells(cell);
+                    for particle in cell.particles: # this needs to be adjusted as soon as I have the cell class
+                        for local_cell in cell_and_neighbours.flat:
+                            for local_particle in local_cell.particles: # adjust as well, because we need access to the particle list
+                                self.p2p_eval.evaluate_density(particle1=particle, particle2=local_particle);
+                        self.p2p_eval.eos.evaluate_pressure(particle=particle);
     # the next is to evaluate the acceleration
     def cell_loop_acceleration(self):
         # we loop over all the cells we own
@@ -48,26 +50,29 @@ class Simulator:
     def cell_loop_time_integration_first_kick_and_drift(self):
         # we loop over all the cells we own
         for cell in self.grid.matrix_of_cells.flat:
-            # we loop over the particles in that cell
-            for particle in cell.particles:
-                # we execute the first kick and drift
-                self.verlet.first_kick(particle=particle);
-                self.verlet.drift(particle=particle);
-                # now because the positions have changed, we need to reset the pressure,
-                # density and acceleration, otherwise we would always add more and more
-                # acceleration until we blow up
-                particle.reset_dynamic_values();
+            if (self.grid.is_locally_owned(cell)):
+                # we loop over the particles in that cell
+                for particle in cell.particles:
+                    # we execute the first kick and drift
+                    self.verlet.first_kick(particle=particle);
+                    self.verlet.drift(particle=particle);
+                    # now because the positions have changed, we need to reset the pressure,
+                    # density and acceleration, otherwise we would always add more and more
+                    # acceleration until we blow up
+                    particle.reset_dynamic_values();
 
     def cell_loop_time_integration_second_kick(self):
         # we loop over all the cells we own
         for cell in self.grid.matrix_of_cells.flat:
-            # we loop over the particles in that cell
-            for particle in cell.particles:
-                self.verlet.second_kick(particle=particle);
-                particle.reset_acceleration();
+            if (self.grid.is_locally_owned(cell)):
+                # we loop over the particles in that cell
+                for particle in cell.particles:
+                    self.verlet.second_kick(particle=particle);
+                    particle.reset_acceleration();
         self.verlet.advance_in_time();
+    
     def spawn_particles(self):
-        for i in range(50):
+        for i in range(200):
             pos1 = np.array([np.random.uniform(0, self.grid.bounding_box[0]), np.random.uniform(0, self.grid.bounding_box[1])]);
             vel = np.zeros(2);
             particle1 = Particle(pos1, vel, self.particle_radius);
@@ -76,17 +81,20 @@ class Simulator:
     def print_particle_position(self):
         # we loop over all the cells we own
         for cell in self.grid.matrix_of_cells.flat:
+            if (self.grid.is_locally_owned(cell)):
             # we loop over the particles in that cell
-            print(cell.particles);
+                print(cell.particles);
         for cell in self.grid.matrix_of_cells.flat:
-            for particle in cell.particles:
-                print('pos',particle.position);
+            if (self.grid.is_locally_owned(cell)):
+                for particle in cell.particles:
+                    print('pos',particle.position);
 
     def write_points_to_vtk(self):
         vtk_points = vtk.vtkPoints();
         for cell in self.grid.matrix_of_cells.flat:
-            for particle in cell.particles:
-                vtk_points.InsertNextPoint(particle.position[0], particle.position[1], 0.0);
+            if (self.grid.is_locally_owned(cell)):
+                for particle in cell.particles:
+                    vtk_points.InsertNextPoint(particle.position[0], particle.position[1], 0.0);
         polydata = vtk.vtkPolyData()
         polydata.SetPoints(vtk_points)
         writer = vtk.vtkPolyDataWriter()
@@ -98,16 +106,20 @@ class Simulator:
 
     def correct_boundary_and_moved(self):
         for cell in self.grid.matrix_of_cells.flat:
-            for i in range(len(cell.particles)-1, -1, -1):
-                cell.resolve_collision(cell.particles[i]);
-                if (cell.particle_outside_cell(cell.particles[i])):
-                    self.grid.move_particle_to_correct_cell(cell=cell, particle_index=i);
+            if (self.grid.is_locally_owned(cell)):
+                for i in range(len(cell.particles)-1, -1, -1):
+                    cell.resolve_collision(cell.particles[i]);
+                    if (cell.particle_outside_cell(cell.particles[i])):
+                        self.grid.move_particle_to_correct_cell(cell=cell, particle_index=i);
+
+    def compute_first_local_partitioning(self, comm):
+        return 0;
 
 
     def run(self):
 
         self.spawn_particles();
-        
+        self.write_points_to_vtk();
         self.cell_loop_density_and_pressure();
         self.cell_loop_acceleration();
         while (True):
@@ -137,6 +149,6 @@ class Simulator:
             self.cell_loop_acceleration();
 
         
-sim = Simulator(speed_of_sound=1, reference_density=30, smoothing_length=0.2, body_force=np.array([0, -5]), time_step_size=1e-4, final_time=1e0, grid_lengths=np.array([5, 5]), subdivisions=np.array([4,4]));
+sim = Simulator(speed_of_sound=1, reference_density=1, smoothing_length=0.25, body_force=np.array([0, 0]), time_step_size=1e-4, final_time=1e0, grid_lengths=np.array([5, 5]), subdivisions=np.array([10,10]));
 
 sim.run();

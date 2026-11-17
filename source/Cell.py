@@ -6,28 +6,15 @@ from Particle import Particle
 # Also WIP
 class Cell:
     def __init__(self, lower_left, length, global_length_x, global_length_y):
-        # 0:1 : x- and y-index of the cell
-        # 2: length of cell (cubed, so only one necessary)
-        # 3:4 : global length in x and y
-        # 5: precomputed identifier if cell is at boundary
-        # 6: array_of_particles
-        self.buffer = np.empty(7, dtype=object); 
-
-        self.lower_left = self.buffer[0:1];
         self.lower_left = lower_left; # we have cubed cells, so we will use the lower point and we have completely defined the cell
 
-        self.cell_length = self.buffer[2];
         self.cell_length = length;
 
-        self.global_x = self.buffer[3];
-        self.global_y = self.buffer[4];
         self.global_x = global_length_x
         self.global_y = global_length_y
 
-        self.is_at_boundary = self.buffer[5];
         self.is_at_boundary = self.boundary_check();
 
-        self.particles = self.buffer[6];
         self.particles = []; 
 
     def boundary_check(self):
@@ -61,12 +48,9 @@ class Cell:
                 particle.velocity[1] = -particle.velocity[1]*0.99;
                 particle.position[1] = self.global_y - particle.radius;
 
-    # if a particle has moved outside of the cell domain,
-    # we let grid know and the grid takes care of the 
-    # moving process. The details of the function are up for debate
-    def tell_grid_particle_has_moved():
-        return 0;
-
     
     def get_global_index(self):
         return self.lower_left;
+
+    def pack_into_buffer(self):
+        return np.array([self.lower_left, self.cell_length, self.global_x, self.global_y, self.is_at_boundary, self.particles], dtype=object);
