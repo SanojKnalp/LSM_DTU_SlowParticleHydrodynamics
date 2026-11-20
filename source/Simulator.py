@@ -7,9 +7,10 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from mpi4py import MPI
 import vtk
+from vtk.numpy_interface import dataset_adapter as dsa
 
 class Simulator:
-    def __init__(self, speed_of_sound, reference_density, smoothing_length, body_force, time_step_size, final_time, grid_lengths, subdivisions, communicator, divide_x=True):
+    def __init__(self, speed_of_sound, reference_density, smoothing_length, body_force, time_step_size, final_time, grid_lengths, subdivisions, communicator, total_number_of_particles = 200, divide_x=True):
         self.mpi_communicator = communicator;
         self.divide_x = divide_x;
         self.global_grid_length = self.grid_lengths;
@@ -18,6 +19,8 @@ class Simulator:
         self.verlet = VelocityVerlet(time_step_size, final_time);
         self.grid = Grid(grid_lengths, subdivisions, self.mpi_communicator);
         self.particle_radius = smoothing_length;
+
+        self.number_of_particles = total_number_of_particles;
         
 
     # we need separate loops as we need to precompute the densities, because we need them a lot
@@ -78,7 +81,7 @@ class Simulator:
         self.verlet.advance_in_time();
     
     def spawn_particles(self):
-        for i in range(200):
+        for i in range(self.number_of_particles):
             pos1 = np.array([np.random.uniform(0, self.grid.bounding_box[0]), np.random.uniform(0, self.grid.bounding_box[1])]);
             vel = np.zeros(2);
             particle1 = Particle(pos1, vel, self.particle_radius);
@@ -95,6 +98,9 @@ class Simulator:
                 for particle in cell.particles:
                     print('pos',particle.position);
 
+    # this function is based on the implementation provided here:
+    # https://www.kitware.com/mpi4py-and-vtk/
+    # which we should adapt to our purposes
     def write_points_to_vtk(self):
         vtk_points = vtk.vtkPoints();
         for cell in self.grid.matrix_of_cells.flat:
