@@ -13,7 +13,7 @@ class Simulator:
     def __init__(self, speed_of_sound, reference_density, smoothing_length, body_force, time_step_size, final_time, grid_lengths, subdivisions, communicator, total_number_of_particles = 200, divide_x=True):
         self.mpi_communicator = communicator;
         self.divide_x = divide_x;
-        self.global_grid_length = self.grid_lengths;
+        self.global_grid_length = grid_lengths;
         self.global_subdivisions = subdivisions;
         self.p2p_eval = Particle2ParticleEvaluator(speed_of_sound, reference_density, smoothing_length, body_force);
         self.verlet = VelocityVerlet(time_step_size, final_time);
@@ -123,7 +123,7 @@ class Simulator:
                     cell.resolve_collision(cell.particles[i]);
                     if (cell.particle_outside_cell(cell.particles[i])):
                         self.grid.move_particle_to_correct_cell(cell=cell, particle_index=i);
-
+        self.grid.send_particles();
 
 
     def run(self):
@@ -134,6 +134,11 @@ class Simulator:
         self.cell_loop_acceleration();
         while (True):
             self.cell_loop_time_integration_first_kick_and_drift();
+            self.correct_boundary_and_moved();
+            if (self.verlet.current_time_step%5 ==0):
+                self.grid.repartition_slabs();
+            else:
+                self.grid.send_and_request_ghost_cells_slabs();
             # position and velocity have changed, so we need to run the full cell loop
             # and recompute basically everything
             # we recompute the density and then immediately the pressure
@@ -143,7 +148,6 @@ class Simulator:
             #self.print_particle_position();
             # we do the second kick
             self.cell_loop_time_integration_second_kick();
-            self.correct_boundary_and_moved();
             # now if we reached the final time-step, we break.
             if (self.verlet.current_time_step %50 == 0):
                 self.write_points_to_vtk();
