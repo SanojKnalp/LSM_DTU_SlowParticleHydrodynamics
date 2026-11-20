@@ -135,6 +135,7 @@ class Simulator:
         while (True):
             self.cell_loop_time_integration_first_kick_and_drift();
             self.correct_boundary_and_moved();
+            # change this number later to not repartition every 5 time steps
             if (self.verlet.current_time_step%5 ==0):
                 self.grid.repartition_slabs();
             else:
