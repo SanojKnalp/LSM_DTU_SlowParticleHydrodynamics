@@ -177,8 +177,6 @@ class Grid:
         # this is the attempt of it. We basically store the respective rank it requested and then 
         rank_indices_pairing = np.ones((total_number_of_ghost_cells, 3), dtype=np.int32)*(-1);
 
-        number_of_ghost_cells_we_send = np.zeros((size, 2));
-
         # we set up two parameters. The first one is a partial sum over the number of ghost cells
         # from every rank. We use it to track if we have left the respective rank.
         current_sum =number_of_ghost_cells_on_every_rank[0];
@@ -193,7 +191,6 @@ class Grid:
             if (i >= current_sum):
                 rank_of_index+=1;
                 current_sum+=number_of_ghost_cells_on_every_rank[rank_of_index];
-                number_of_ghost_cells_we_send[rank_of_index, 0] = rank_of_index;
 
 
             # now we do not send particles to ourself
@@ -208,7 +205,6 @@ class Grid:
                 rank_indices_pairing[i, 0] = rank_of_index;
                 rank_indices_pairing[i, 1] = x_index;
                 rank_indices_pairing[i, 2] = y_index;
-                number_of_ghost_cells_we_send[rank_of_index, 1] +=1;
 
 
         # now before we can actually send them, we have to tell every ran how many it will receive from us.
@@ -234,7 +230,7 @@ class Grid:
                 continue;
             # based on the respective number of ghost cells we send, we initialize an array
             # we initialize an array where we will store the respective cells we send to each rank
-            send_buffer = np.empty(number_of_ghost_cells_we_send[i, 1], dtype=object);
+            send_buffer = np.empty(send_to_rank[i], dtype=object);
 
             # we extract the indices of the rank we want to send it to.
             indices_of_the_rank_index_pairing = np.where(rank_indices_pairing[:, 0] == i)[0];
