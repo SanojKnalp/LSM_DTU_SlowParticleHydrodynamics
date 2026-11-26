@@ -1,6 +1,5 @@
 import numpy as np
 import math
-from mpi4py import MPI
 
 # this function computes the initial grid partitioning for rectangles
 def create_initial_partitioning_rectangles(rank, size, number_of_cells_x, number_of_cells_y):
@@ -30,7 +29,6 @@ def create_initial_partitioning_rectangles(rank, size, number_of_cells_x, number
     return compute_locally_owned_cells_from_rank_and_splits(rank, x_splitted, y_splits, s_metric);
 
 
-
 # this function computes the correct splitting. 
 # reminder: locally_owned_cells[0] = [0,1,2,3]  and locally_owned_cells=[2,3,4]; for example
 def compute_locally_owned_cells_from_rank_and_splits(rank, x_splitted, y_splitted, number_of_columns):
@@ -56,7 +54,7 @@ def compute_locally_owned_cells_from_rank_and_splits(rank, x_splitted, y_splitte
 
     return locally_owned_cells;
 
-
+# splits the columns into the correct number of rows
 def split_y(number_of_cells_y, uneven_splits):
 
     splits = [];
@@ -123,19 +121,10 @@ def split_line_grid_into_n_pieces(number_of_parts, number_of_cells_in_direction)
             split[2*j+1] = current_index + (perfect_division-1) + extensions[j];
 
             current_index+=perfect_division + extensions[j];
-
-
     
     return split;
 
 
-
-
-
-
-
-    
-
-print(create_initial_partitioning_rectangles(rank=11, size=22, number_of_cells_x=12, number_of_cells_y=8));
+print(create_initial_partitioning_rectangles(rank=8, size=18, number_of_cells_x=8, number_of_cells_y=12));
 
 
