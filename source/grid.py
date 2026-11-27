@@ -130,6 +130,151 @@ class Grid:
                 self.matrix_of_cells[-1, i] = Cell(lower_left=cell[0], length=cell[1], global_length_x=cell[2], global_length_y=cell[3], mpi_rank=cell[5], particles=cell[4]);
 
 
+    def send_and_request_ghost_cells_rectangles(self):
+        # we do not need communication if we only have one rank
+        size = self.communicator.Get_size();
+        rank = self.communicator.Get_rank();
+        if ( size < 2):
+            return;
+
+        matrix_shape = self.bool_matrix_ghost.shape;
+        # Steps:
+        # 1. We need to know which rank owns the respective index.
+        # We start by getting the telling every rank the number of ghost cells we need
+        # We need this because we want later Allgatherv later
+        number_of_ghost_cells_on_this_rank = np.count_nonzero(self.bool_matrix_ghost.flat == False);
+
+        number_of_ghost_cells_on_every_rank = np.empty(size, dtype=np.int32);
+
+        self.communicator.Allgather([number_of_ghost_cells_on_this_rank, MPI.INT], [number_of_ghost_cells_on_every_rank, MPI.INT]);
+
+        # ok, now we know the total number of ghost cells on each rank
+
+        # the next step involves asking for the indices, so we make an array, which contains all the indices of the ghost cells
+
+        ghost_indices_on_this_rank = np.array(2*number_of_ghost_cells_on_this_rank, dtype=np.int32);
+
+        current_index = 0;
+        for i in range (self.transform_local_index_to_global_index_x(0), self.transform_local_index_to_global_index_x(matrix_shape[0]-1), 1):
+            for j in range(self.transform_local_index_to_global_index_y(0), self.transform_local_index_to_global_index_y(matrix_shape[0]-1), 1):
+                if (not self.bool_matrix_ghost[i,j]):
+                    ghost_indices_on_this_rank[current_index] = i;
+                    ghost_indices_on_this_rank[current_index+1] = j;
+                    current_index+=2;
+
+        # ok, now we have all the indices in one array. We can send that array now
+
+        # but first, we need the total size of the array, which is just the total number of ghost cells
+        total_number_of_ghost_cells = np.sum(number_of_ghost_cells_on_every_rank);
+
+        # now we initialize our array 
+        ghost_indices_on_all_ranks = np.empty(2*total_number_of_ghost_cells, dtype=np.int32);
+
+        self.communicator.Allgatherv([ghost_indices_on_this_rank, MPI.INT], [ghost_indices_on_all_ranks, MPI.INT]);
+
+        # now we have all the indices. We simply now need to loop over all the ghost indices and if we own it, then we can mark it and store it
+
+        # this is the attempt of it. We basically store the respective rank it requested and then 
+        rank_indices_pairing = np.ones((total_number_of_ghost_cells, 3), dtype=np.int32)*(-1);
+
+        # we set up two parameters. The first one is a partial sum over the number of ghost cells
+        # from every rank. We use it to track if we have left the respective rank.
+        current_sum =number_of_ghost_cells_on_every_rank[0];
+        # the second index is the rank of the respective index 
+        rank_of_index =  0; 
+        # now we loop over all the ghost cells
+        for i in range(0, total_number_of_ghost_cells, 1):
+            # now if we run into the case that we reach the point where we have 
+            # the same or a higher index than the current rank has ghost cells,
+            # we are looking at the ghost cells of a different rank. 
+            # sp current_sum needs to change and rank_of_index too.
+            if (i >= current_sum):
+                rank_of_index+=1;
+                current_sum+=number_of_ghost_cells_on_every_rank[rank_of_index];
+
+
+            # now we do not send particles to ourself
+            if (rank_of_index == rank):
+                continue;
+            # since we have valid indices now, we compute them
+            x_index = ghost_indices_on_all_ranks[2*i];
+            y_index = ghost_indices_on_all_ranks[2*i+1];
+
+            # now if we actually own them, we create the pairing
+            if (self.is_locally_owned_index(x_index, y_index)):
+                rank_indices_pairing[i, 0] = rank_of_index;
+                rank_indices_pairing[i, 1] = x_index;
+                rank_indices_pairing[i, 2] = y_index;
+
+
+        # now before we can actually send them, we have to tell every ran how many it will receive from us.
+        number_of_ghost_cells_we_receive_from_rank = np.zeros(size, dtype=np.int32);
+        send_to_rank = np.zeros(size, dtype=np.int32);
+        for i in range(size):
+            number_of_messages_we_send_to_rank_i = np.size(np.where(rank_indices_pairing[:, 0] == i)[0]);
+            send_to_rank[i] = number_of_messages_we_send_to_rank_i;
+
+        # we do this now with an All_to_all this is really what we want.
+
+        number_of_messages_we_receive = np.empty(size, dtype=np.int32);
+
+        # now we know how many messages we will receive from every rank
+        self.communicator.Alltoall([send_to_rank, MPI.INT], [number_of_messages_we_receive, MPI.INT]);
+
+
+        # this is where the sending phase happens
+        # we loop over all ranks 
+        for i in range(size):
+            # we do not send to ourself
+            if (i == rank):
+                continue;
+            # based on the respective number of ghost cells we send, we initialize an array
+            # we initialize an array where we will store the respective cells we send to each rank
+            send_buffer = np.empty(send_to_rank[i], dtype=object);
+
+            # we extract the indices of the rank we want to send it to.
+            indices_of_the_rank_index_pairing = np.where(rank_indices_pairing[:, 0] == i)[0];
+
+
+            send_buffer_index = 0;
+            # we loop over all those indices
+            for index in indices_of_the_rank_index_pairing:
+                #transform these global indices back into local ones
+                local_x_index = self.transform_global_index_to_local_index_x(rank_indices_pairing[index, 1]);
+                local_y_index = self.transform_global_index_to_local_index_y(rank_indices_pairing[index, 2]);
+                # we fill the send buffer
+                send_buffer[send_buffer_index] = self.matrix_of_cells[local_x_index, local_y_index].pack_into_buffer();
+
+            # and then we send it
+            self.communicator.isend(send_buffer, dest=i, tag = rank); # maybe we need a tag? Ignore it for now
+
+
+        # the next step is just receiving them
+        # this is quite easy. We simply loop until we received all indices
+
+        requests = [];
+        cells = [];
+        for i in range(size):
+            ghost_cells_we_receive_from_that_rank = number_of_messages_we_receive[i];
+            if (ghost_cells_we_receive_from_that_rank == 0):
+                continue;
+
+            cells_from_rank_i = np.array(ghost_cells_we_receive_from_that_rank, dtype=object);
+            requests.append(self.communicator.irecv(cells_from_rank_i), source=i, tag = i);
+            cells.append[cells_from_rank_i];
+
+        MPI.Request.Waitall(requests);
+
+        # now that we received all the cells, we just have to fill them
+        for i in range(len(cells)):
+            cells_rank_i = cells[i];
+            for cell in cells_rank_i:
+                local_x_receive_index = self.transform_global_index_to_local_index_x(cell[1][0]);
+                local_y_receive_index = self.transform_global_index_to_local_index_y(cell[1][1]);
+                self.matrix_of_cells[local_x_receive_index, local_y_receive_index] = Cell(lower_left=cell[0], length=cell[1], global_length_x=cell[2], global_length_y=cell[3], mpi_rank=cell[5], particles=cell[4]);
+
+    # and we are done. I HATE PYTHON.
+
 
     # adjust indices
     def insert_particle(self, particle):
@@ -160,6 +305,10 @@ class Grid:
     def is_locally_owned(self, cell):
         id = cell.lower_left;
         return self.bool_matrix_ghost[self.transform_global_index_to_local_index_x(id[0]), self.transform_global_index_to_local_index_y(id[1])];
+
+    # tests if we own a global index
+    def is_locally_owned_index(self, global_x_index, global_y_index):
+        return self.bool_matrix_ghost[self.transform_global_index_to_local_index_x(global_x_index), self.transform_global_index_to_local_index_y(global_y_index)];
 
 
     def setup_owned_cells(self):
